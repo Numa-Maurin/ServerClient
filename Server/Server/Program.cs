@@ -10,7 +10,7 @@ namespace Server
     class Program
     {
         static readonly object _lock = new object();
-        static readonly Dictionary<int, TcpClient> list_clients = new Dictionary<int, TcpClient>();
+        static readonly Dictionary<int, TcpClient> list_TCPclients = new Dictionary<int, TcpClient>();
 
         static void Main(string[] args)
         {
@@ -23,10 +23,11 @@ namespace Server
             while (true)
             {
                 TcpClient client = ServerSocket.AcceptTcpClient();
-                lock (_lock) list_clients.Add(count, client);
+                lock (_lock) list_TCPclients.Add(count, client);
                 Console.WriteLine("un client vient de se connecter");
 
                 Thread t = new Thread(handle_clients);
+                //création du thread pour la gestion de ce nouveau client
                 t.Start(count);
                 count++;
             }
@@ -37,7 +38,7 @@ namespace Server
             int id = (int)o;
             TcpClient client;
 
-            lock (_lock) client = list_clients[id];
+            lock (_lock) client = list_TCPclients[id];
 
             while (true)
             {
@@ -51,11 +52,11 @@ namespace Server
                 }
 
                 string data = Encoding.ASCII.GetString(buffer, 0, byte_count);
-                broadcast(data);
+                broadcast("id"+data);
                 Console.WriteLine(data);
             }
 
-            lock (_lock) list_clients.Remove(id);
+            lock (_lock) list_TCPclients.Remove(id);
             client.Client.Shutdown(SocketShutdown.Both);
             client.Close();
         }
@@ -66,7 +67,7 @@ namespace Server
 
             lock (_lock)
             {
-                foreach (TcpClient c in list_clients.Values)
+                foreach (TcpClient c in list_TCPclients.Values)
                 {
                     NetworkStream stream = c.GetStream();
 
